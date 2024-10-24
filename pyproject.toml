@@ -1,0 +1,19 @@
+[tool.poetry]
+name = "human-readable"
+version = "0.1.0"
+description = "A decorator for logging OpenAI API requests and responses."
+authors = ["Quoc Duong <qduong@humanreadable.ai>"]
+readme = "README.md"
+license = "Apache-2.0"
+
+[tool.poetry.dependencies]
+python = "^3.13"
+openai = "1.52.2"
+requests = "^2.26.0"
+
+[tool.poetry.dev-dependencies]
+pytest = "^6.2"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
