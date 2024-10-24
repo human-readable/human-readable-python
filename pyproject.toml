@@ -1,5 +1,5 @@
 [tool.poetry]
-name = "human-readable"
+name = "hrai_python"
 version = "0.1.0"
 description = "A decorator for logging OpenAI API requests and responses."
 authors = ["Quoc Duong <qduong@humanreadable.ai>"]

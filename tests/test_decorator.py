@@ -1,5 +1,5 @@
 import pytest
-from human_readable import readable
+from hrai_package import ToolBuilder
 
 @readable
 def mock_function(x, y):
