@@ -3,7 +3,6 @@ name: Publish Python Package
 on:
   release:
     types: [published]
-  workflow_dispatch:
 
 jobs:
   build:
@@ -16,7 +15,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
-          python-version: '3.6'  # You can specify other versions here
+          python-version: '3.8.18'
 
       - name: Install Poetry
         run: |
