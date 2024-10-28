@@ -1,81 +1,102 @@
-import openai
-import requests
-import functools
+import logging
+from datetime import datetime
+from functools import wraps
+from typing import Dict, List, Callable, Any
 
+logging.basicConfig(
+    filename="openai_chat_requests.log",
+    level=logging.INFO,
+    format="%(asctime)s - %(levelname)s - %(message)s"
+    )
 
-LOG_REQUEST_URL = "https://humanreadable.ai/logger/request"
-LOG_RESPONSE_URL = "https://humanreadable.ai/logger/response"
-
-
-class ToolBuilder:
-    def __init__(self, model="gpt-4", api_key=None):
-        self.model = model
-        self.api_key = api_key if api_key else "Your_OpenAI_API_Key"
-        self.template = {}
-
-    def add_prompt(self, prompt: str):
-        self.template['prompt'] = prompt
-        return self
-
-    def set_max_tokens(self, max_tokens: int):
-        self.template['max_tokens'] = max_tokens
-        return self
-
-    def set_temperature(self, temperature: float):
-        self.template['temperature'] = temperature
-        return self
-
-    def build(self):
-        """Build the request template for the OpenAI function call."""
-        if 'prompt' not in self.template:
-            raise ValueError("Prompt is required to build a request")
-        return {
-            'model': self.model,
-            **self.template
+class gpt_utils:
+    # Helper to build tools for OpenAI function calls
+    # Example usage:
+    # name = "my_tool" 
+    # description = "This is a tool that does something"    
+    # properties = {
+    #     "answer": "The answer to the tool",
+    #     "request": "The request to the tool"
+    # }
+    # my_tool = gpt_utils.create_tool(name, description, properties)
+    def create_tool(name: str, description: str, properties: Dict[str, str], require: List[str] = None) -> dict:
+        properties_dict = {
+            prop_name: {
+                "type": "string",
+                "description": prop_desc
+            }
+            for prop_name, prop_desc in properties.items()
         }
-
-    def make_request(self):
-        """Make the OpenAI function call based on the built template."""
-        if not self.api_key:
-            raise ValueError("OpenAI API key is required for the request")
         
-        openai.api_key = self.api_key
-        response = openai.Completion.create(**self.build())
-        return response
+        required_properties = require if require is not None else list(properties.keys())
 
+        tool = {
+            "type": "function",
+            "function": {
+                "name": name,
+                "description": description,
+                "parameters": {
+                    "type": "object",
+                    "properties": properties_dict,
+                    "required": required_properties
+                }
+            }
+        }
+        return tool
 
-def log_data(url, data):
-    try:
-        response = requests.post(url, json=data)
-        response.raise_for_status()
-    except requests.exceptions.RequestException as e:
-        print(f"Failed to log data to {url}: {e}")
+    # Helper to create a prompt string from a template and inputs
+    # Example usage:
+    # template = "What is the capital of {country}?"
+    # inputs = {"country": "France"}
+    # prompt = gpt_utils.create_prompt(template, inputs)
+    def create_prompt(template, inputs: Dict[str, str]) -> str:
+        try:
+            prompt = template.format(**inputs)
+        except KeyError as e:
+            missing_key = str(e).strip("'")
+            raise ValueError(f"Missing value for placeholder: '{missing_key}' in inputs.")
+        
+        return prompt
 
+class hrai_logger:
+    def readable(func: Callable) -> Callable:
+        """
+        A decorator to log the messages, response, and timestamp of a chat completion request.
 
-def readable(func):
-    """A decorator to log OpenAI requests and responses."""
-    @functools.wraps(func)
-    def wrapper(*args, **kwargs):
-        # Log the request data
-        request_data = {"args": args, "kwargs": kwargs}
-        log_data(LOG_REQUEST_URL, request_data)
+        Args:
+            func (Callable): The function to wrap and log.
 
-        # Make the actual function call
-        response = func(*args, **kwargs)
+        Returns:
+            Callable: The wrapped function with logging.
+        """
+        @wraps(func)
+        def wrapper(*args, **kwargs) -> Any:
+            # Extract messages for logging
+            messages = kwargs.get("messages", args[0] if args else None)
+            
+            # Log the messages and current time before making the request
+            logging.info({
+                "event": "ChatCompletionRequest",
+                "messages": messages,
+                "timestamp": datetime.now().isoformat()
+            })
 
-        # Log the response data
-        response_data = {"response": response}
-        log_data(LOG_RESPONSE_URL, response_data)
+            try:
+                # Call the original function to get the response
+                response = func(*args, **kwargs)
+                
+                logging.info({
+                    "event": "ChatCompletionResponse",
+                    "response": response,
+                    "timestamp": datetime.now().isoformat()
+                })
+                return response
+            except Exception as e:
+                logging.error({
+                    "event": "ChatCompletionError",
+                    "error": str(e),
+                    "timestamp": datetime.now().isoformat()
+                })
+                raise
 
-        return response
-    return wrapper
-
-
-@readable
-def make_openai_request(prompt):
-    """Example OpenAI request using the decorator and ToolBuilder."""
-    tool_builder = ToolBuilder(model="gpt-4")
-    tool_builder.add_prompt(prompt).set_max_tokens(100).set_temperature(0.7)
-
-    response = tool_builder.make_request()
-    return response
+        return wrapper
