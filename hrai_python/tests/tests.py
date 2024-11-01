@@ -2,10 +2,12 @@ import pytest
 import openai
 import os
 from datetime import datetime
-from hrai_python import hrai_logger, gpt_utils
+from hrai_python.hrai_logger import logger
+from hrai_python.hrai_utils import utils
 
 # Configure OpenAI with your API key from environment variables
 openai.api_key = os.getenv("OPENAI_API_KEY")
+logger = logger(base_url="https://api.humanreadable.ai/", apikey="test_api_key", enable_async=False, enable_remote=True,)
 
 # Tests for gpt_utils functions
 
@@ -17,7 +19,7 @@ def test_create_tool_all_required():
         "request": "The request to the tool"
     }
     
-    tool = gpt_utils.create_tool(name, description, properties)
+    tool = utils.create_tool(name, description, properties)
     
     # Assertions
     assert tool["function"]["name"] == name
@@ -35,7 +37,7 @@ def test_create_tool_custom_required():
     }
     
     required_fields = ["answer"]
-    tool = gpt_utils.create_tool(name, description, properties, require=required_fields)
+    tool = utils.create_tool(name, description, properties, require=required_fields)
     
     # Assertions
     assert tool["function"]["parameters"]["required"] == required_fields
@@ -44,7 +46,7 @@ def test_create_prompt_success():
     template = "What is the capital of {country}?"
     inputs = {"country": "France"}
     
-    prompt = gpt_utils.create_prompt(template, inputs)
+    prompt = utils.create_prompt(template, inputs)
     
     # Assertion
     assert prompt == "What is the capital of France?"
@@ -54,12 +56,11 @@ def test_create_prompt_missing_input():
     inputs = {"city": "Paris"}
     
     with pytest.raises(ValueError, match="Missing value for placeholder"):
-        gpt_utils.create_prompt(template, inputs)
+        utils.create_prompt(template, inputs)
 
 
 # Integration Tests with Real OpenAI Requests
-
-@hrai_logger.readable
+@logger.readable
 def real_chat_completion(messages, model="gpt-4o"):
     """
     A test function to send real requests to OpenAI's Chat API.
@@ -86,3 +87,79 @@ def test_real_chat_completion_error():
 
     with pytest.raises(openai.OpenAIError):  # Use OpenAI's general error
         real_chat_completion(messages=messages, model="invalid-model")
+        
+import pytest
+from hrai_python.hrai_logger import logger
+import logging
+from datetime import datetime
+
+# Updated mock function to return a response structure expected by the decorator
+def mock_function_call(*args, **kwargs):
+    return {
+        "choices": [
+            {
+                "message": {
+                    "tool_calls": [
+                        {
+                            "id": "call_abc123",
+                            "type": "function",
+                            "function": {
+                                "name": "get_current_weather",
+                                "arguments": "{\"location\": \"Boston, MA\"}"
+                            }
+                        }
+                    ]
+                }
+            },
+            {
+                "message": {
+                    "content": "The capital of France is Paris."
+                }
+            }
+        ]
+    }
+
+def test_readable_decorator_with_function_call(monkeypatch):
+    # Instantiate logger with enable_async=False to ensure log_remote is used
+    test_logger = logger(base_url="https://api.humanreadable.ai/", apikey="test_api_key", enable_async=False)
+
+    # Wrap the mock function with the readable decorator
+    decorated_function = test_logger.readable(mock_function_call)
+
+    # Prepare to capture requests.post calls
+    post_calls = []
+
+    def mock_post(url, json, headers):
+        post_calls.append({"url": url, "json": json, "headers": headers})
+        # Mock response with raise_for_status method
+        class MockResponse:
+            status_code = 200
+            def raise_for_status(self):
+                pass  # No-op method to simulate successful status check
+
+        return MockResponse()
+
+    # Ensure monkeypatch points to the correct path in the logger module
+    monkeypatch.setattr("hrai_python.hrai_logger.requests.post", mock_post)
+
+    # Define input for the decorated function
+    messages = [{"role": "user", "content": "What is the capital of France?"}]
+
+    # Call the decorated function
+    response = decorated_function(messages=messages)
+
+    # Assertions for the function response
+    assert response["choices"][0]["message"]["tool_calls"][0]["function"]["name"] == "get_current_weather"
+    assert response["choices"][1]["message"]["content"] == "The capital of France is Paris."
+
+    # Validate the combined log entry structure
+    log_entry = post_calls[0]["json"]
+    assert log_entry["request"]["event"] == "ChatCompletionRequest"
+    assert log_entry["request"]["request"] == messages
+
+    # Validate the response structure within the single log entry
+    assert len(log_entry["responses"]) == 2
+    assert log_entry["responses"][0]["event"] == "ChatCompletionToolCall"
+    assert log_entry["responses"][0]["function_name"] == "get_current_weather"
+    assert log_entry["responses"][1]["event"] == "ChatCompletionResponse"
+    assert log_entry["responses"][1]["content"] == "The capital of France is Paris."
