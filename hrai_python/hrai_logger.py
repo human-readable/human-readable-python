@@ -95,13 +95,16 @@ class logger:
             try:
                 result = func(instance, *args, **kwargs)
                 logging.info(f"result type: {type(result)}")
-                log_data = {
-                    "request": request_info,
-                    "response": {
-                        "content": result,
-                    },
-                    "timestamp": datetime.now().isoformat()
-                }
+
+            finally:
+                instance.client._client = original_client
+            if type(result) == openai.types.chat.chat_completion.ChatCompletion:
+                log_data = {}
+                log_data["request"] = request_info
+                log_data["response"] = {
+                        "content": result.to_json(),
+                    }
+                log_data["timestamp"] =  datetime.now().isoformat()
                 if self.enable_remote == True:
                     if self.enable_async:
                         self.log_remote_async(log_data)
@@ -109,9 +112,6 @@ class logger:
                         self.log_remote(log_data)
                 logging.info(f"log: {log_data}")
 
-            finally:
-                instance.client._client = original_client
-            if type(result) == openai.types.chat.chat_completion.ChatCompletion:
                 if self.return_type == self.Return_Type.content_only:
                     return result.choices[0].message.content
                 elif self.return_type == self.Return_Type.json:
