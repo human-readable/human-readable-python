@@ -7,7 +7,7 @@
 
 
 
-    from hrai_python import Logger
+    from hrai_python.hrai_logger import logger
 
     #Initialize the Logger
 
@@ -17,6 +17,31 @@
         enable_async=True,                # Use asynchronous remote logging
         return_type=Logger.Return_Type.content_only
     )
+
+
+### Basic Usage
+
+    import os
+    from openai import OpenAI
+    from dotenv import load_dotenv
+    from hrai_python.hrai_logger import logger
+
+
+    logger = logger()
+
+    class gpt:
+        def __init__(self):
+            load_dotenv()
+            self.model = os.environ.get("OPENAI_MODEL")
+            self.client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
+                
+        @logger.readable
+        def basic_completion(self, messages):
+            completion = self.client.chat.completions.create(
+            model = self.model,
+            messages=messages
+            )
+            return(completion)
 
 
 ## Configuration

@@ -8,6 +8,7 @@ import os
 from concurrent.futures import ThreadPoolExecutor
 import openai
 import httpx
+import json
 
 class logger:
     class Return_Type(Enum):
@@ -79,7 +80,11 @@ class logger:
                 logging.info(f"Content: {request.content.decode('utf-8')}")
                 request_info['method'] = request.method
                 request_info['url'] = str(request.url)
-                request_info['content'] = request.content.decode('utf-8')
+                try:
+                    request_info['content'] = json.loads(request.content.decode('utf8'))
+                except Exception as e:
+                    logging.error(f"Failed to parse request content: {e}")
+                    request_info['content'] = request.content.decode('utf8')
             if self.client_instance:
                 client = self.client_instance
             else:
@@ -99,21 +104,34 @@ class logger:
             finally:
                 instance.client._client = original_client
             if type(result) == openai.types.chat.chat_completion.ChatCompletion:
+                result_json = json.loads(result.to_json())
                 log_data = {}
                 log_data["request"] = request_info
-                log_data["response"] = {
-                        "content": result.to_json(),
-                    }
+                log_data["response"] = result_json
                 log_data["timestamp"] =  datetime.now().isoformat()
                 if self.enable_remote == True:
                     if self.enable_async:
                         self.log_remote_async(log_data)
                     else:
                         self.log_remote(log_data)
-                logging.info(f"log: {log_data}")
+                if result.choices[0].message.content:
+                    content_only = result.choices[0].message.content
+                tool_calls = result_json.get("choices", {})[0].get("message", {}).get("tool_calls", None)
+                if tool_calls:
+                    try:
+                        content_only = json.loads(tool_calls[0].get("function", "{}").get("arguments", "{}"))
+                    except Exception as e:
+                        logging.error(f"Failed to parse response content: {e}")
+                        content_only = tool_calls[0].get("function", "{}").get("arguments", "{}")
+                    logging.info(f"Function Call Arguments:\n{content_only}")
+                    parsed_logs = tool_calls[0].get("function", "{}")
+                    parsed_logs["arguments"] = content_only
+                    log_data["response"] = parsed_logs
+                pretty_result = json.dumps(log_data, indent=2)
+                logging.info(f"Pretty Result:\n{pretty_result}")
 
                 if self.return_type == self.Return_Type.content_only:
-                    return result.choices[0].message.content
+                    return content_only
                 elif self.return_type == self.Return_Type.json:
                     return result.to_json()
                 return result
