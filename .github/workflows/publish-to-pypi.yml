@@ -32,8 +32,5 @@ jobs:
           poetry build
 
       - name: Publish to PyPI
-        env:
-          TWINE_USERNAME: __token__
-          TWINE_PASSWORD: ${{ secrets.PYPI_API_TOKEN }}
         run: |
           poetry publish --build -u __token__ -p ${{ secrets.PYPI_API_TOKEN }}

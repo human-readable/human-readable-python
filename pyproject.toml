@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "hrai_python"
-version = "0.1.0"
+version = "0.2.1"
 description = "A decorator for logging OpenAI API requests and responses."
 authors = ["Quoc Duong <qduong@humanreadable.ai>"]
 readme = "README.md"
@@ -11,6 +11,7 @@ python = "^3.13"
 openai = "1.52.2"
 requests = "^2.26.0"
 pytest = "^8.3.3"
+httpx = "^0.27.2"
 
 [tool.poetry.dev-dependencies]
 pytest = "^8.3.3"
@@ -18,3 +19,10 @@ pytest = "^8.3.3"
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
+
+[tool.pytest.ini_options]
+testpaths = ["hrai_python/tests/tests.py"]
+log_cli = true
+log_cli_level = "INFO"
+log_file = "openai_chat_requests.log"
+log_file_level = "INFO"
