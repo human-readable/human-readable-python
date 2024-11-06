@@ -3,7 +3,7 @@ from openai import OpenAI
 import logging
 import json
 
-class utils:
+class hrai_utils:
     # Helper to build tools for OpenAI function calls
     # Example usage:
     # name = "my_tool" 

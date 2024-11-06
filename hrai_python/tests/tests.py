@@ -2,12 +2,12 @@ import pytest
 import openai
 import os
 from datetime import datetime
-from hrai_python.hrai_logger import logger
-from hrai_python.hrai_utils import utils
+from hrai_python.hrai_logger import hrai_logger
+from hrai_python.hrai_utils import hrai_utils
 
 # Configure OpenAI with your API key from environment variables
 openai.api_key = os.getenv("OPENAI_API_KEY")
-logger = logger(base_url="https://api.humanreadable.ai/", apikey="test_api_key", enable_async=False, enable_remote=True,)
+logger = hrai_logger(base_url="https://api.humanreadable.ai/", apikey="test_api_key", enable_async=False, enable_remote=True,)
 
 # Tests for gpt_utils functions
 
@@ -19,7 +19,7 @@ def test_create_tool_all_required():
         "request": "The request to the tool"
     }
     
-    tool = utils.create_tool(name, description, properties)
+    tool = hrai_utils.create_tool(name, description, properties)
     
     # Assertions
     assert tool["function"]["name"] == name
@@ -37,7 +37,7 @@ def test_create_tool_custom_required():
     }
     
     required_fields = ["answer"]
-    tool = utils.create_tool(name, description, properties, require=required_fields)
+    tool = hrai_utils.create_tool(name, description, properties, require=required_fields)
     
     # Assertions
     assert tool["function"]["parameters"]["required"] == required_fields
@@ -46,7 +46,7 @@ def test_create_prompt_success():
     template = "What is the capital of {country}?"
     inputs = {"country": "France"}
     
-    prompt = utils.create_prompt(template, inputs)
+    prompt = hrai_utils.create_prompt(template, inputs)
     
     # Assertion
     assert prompt == "What is the capital of France?"
@@ -56,7 +56,7 @@ def test_create_prompt_missing_input():
     inputs = {"city": "Paris"}
     
     with pytest.raises(ValueError, match="Missing value for placeholder"):
-        utils.create_prompt(template, inputs)
+        hrai_utils.create_prompt(template, inputs)
 
 
 # Integration Tests with Real OpenAI Requests

@@ -10,7 +10,7 @@ import openai
 import httpx
 import json
 
-class logger:
+class hrai_logger:
     class Return_Type(Enum):
         content_only = 1
         json = 2
@@ -20,12 +20,14 @@ class logger:
                  client_attr_name: Optional[str] = "client",
                  base_url: Optional[str] = None, 
                  apikey: Optional[str] = None, 
+                 project_id: Optional[str] = None,
                  log_file: str = "hrai.log", 
                  log_level: str = "INFO", 
                  log_format: Optional[str] = None, 
                  enable_remote: bool = True, 
                  enable_async: bool = False, 
                  return_type: Return_Type = Return_Type.content_only):
+        self.project_id = project_id
         self.base_url = base_url or "https://api.humanreadable.ai/"
         self.apikey = apikey or os.getenv("HRAI_API_KEY")
         self.log_file = log_file
@@ -106,6 +108,7 @@ class logger:
             if type(result) == openai.types.chat.chat_completion.ChatCompletion:
                 result_json = json.loads(result.to_json())
                 log_data = {}
+                log_data["project_id"] = self.project_id
                 log_data["request"] = request_info
                 log_data["response"] = result_json
                 log_data["timestamp"] =  datetime.now().isoformat()
