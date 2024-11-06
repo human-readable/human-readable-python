@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "hrai_python"
-version = "0.2.1"
+version = "0.2.3"
 description = "A decorator for logging OpenAI API requests and responses."
 authors = ["Quoc Duong <qduong@humanreadable.ai>"]
 readme = "README.md"
@@ -8,7 +8,7 @@ license = "Apache-2.0"
 
 [tool.poetry.dependencies]
 python = "^3.9"
-openai = "1.52.2"
+openai = "^1.40.3"
 requests = "^2.26.0"
 pytest = "^8.3.3"
 httpx = "^0.27.2"
