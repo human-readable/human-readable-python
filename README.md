@@ -7,7 +7,7 @@
 
 
 
-    from hrai_python.hrai_logger import logger
+    from hrai_python.hrai_logger import hrai_logger
 
     #Initialize the Logger
 
@@ -24,7 +24,7 @@
     import os
     from openai import OpenAI
     from dotenv import load_dotenv
-    from hrai_python.hrai_logger import logger
+    from hrai_python.hrai_logger import hrai_logger
 
 
     logger = logger()

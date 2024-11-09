@@ -55,17 +55,13 @@ class hrai_logger:
 
         
     def log_remote(self, log_data: dict):
-        if not self.enable_remote:
-            return
-        
-        if self.base_url == "https://api.humanreadable.ai/":
-            headers = {"Authorization": f"Bearer {self.apikey}"} if self.apikey else {}
-            try:
-                response = requests.post(f"{self.base_url}/logs", json=log_data, headers=headers)
-                response.raise_for_status()
-                logging.info("Remote log sent successfully.")
-            except requests.exceptions.RequestException as e:
-                logging.error(f"Failed to send remote log: {e}")
+        headers = {"X-API-Key": self.apikey, "Content-Type": "application/json"}
+        try:
+            response = requests.post(f"{self.base_url}/log", json=log_data, headers=headers)
+            response.raise_for_status()
+            logging.info("Remote log sent successfully.")
+        except requests.exceptions.RequestException as e:
+            logging.error(f"Failed to send remote log: {e}")
                 
     def log_remote_async(self, log_data: dict):
         self.executor.submit(self.log_remote, log_data)
@@ -112,11 +108,6 @@ class hrai_logger:
                 log_data["request"] = request_info
                 log_data["response"] = result_json
                 log_data["timestamp"] =  datetime.now().isoformat()
-                if self.enable_remote == True:
-                    if self.enable_async:
-                        self.log_remote_async(log_data)
-                    else:
-                        self.log_remote(log_data)
                 if result.choices[0].message.content:
                     content_only = result.choices[0].message.content
                 tool_calls = result_json.get("choices", {})[0].get("message", {}).get("tool_calls", None)
@@ -132,10 +123,16 @@ class hrai_logger:
                     log_data["response"] = parsed_logs
                 pretty_result = json.dumps(log_data, indent=2)
                 logging.info(f"Pretty Result:\n{pretty_result}")
-
+                if self.enable_remote == True:
+                    if self.enable_async:
+                        self.log_remote_async(log_data)
+                    else:
+                        logging.info("Sending remote log...")
+                        self.log_remote(log_data)
                 if self.return_type == self.Return_Type.content_only:
                     return content_only
                 elif self.return_type == self.Return_Type.json:
                     return result.to_json()
                 return result
+
         return wrapper
