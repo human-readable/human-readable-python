@@ -1,7 +1,3 @@
-Here’s an updated README to reflect the code in `hrai_logger.py` and `hrai_utils.py`.
-
----
-
 ## hrai_python
 
 A Python package designed to log and monitor interactions with OpenAI’s API, supporting both local and remote logging. It enables structured logging for OpenAI API calls and facilitates asynchronous remote logging for scalability.
@@ -100,31 +96,3 @@ properties = {
 # Create a tool dictionary
 my_tool = hrai_utils.create_tool(name, description, properties)
 ```
-
-### Creating Prompts
-
-Format a template string with variable placeholders using `create_prompt`.
-
-```python
-template = "What is the capital of {country}?"
-inputs = {"country": "France"}
-prompt = hrai_utils.create_prompt(template, inputs)
-```
-
-### Calling OpenAI Functions
-
-`openai_function_call` manages interactions with OpenAI API’s function call and processes the response.
-
-```python
-tools = my_tool
-messages = [{"role": "user", "content": "What is the capital of France?"}]
-client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
-
-response = hrai_utils().openai_function_call(client, model="gpt-3.5-turbo", tools=tools, messages=messages)
-```
-
-`hrai_utils.openai_chat_completion` provides a direct way to handle OpenAI chat completions with retries for improved reliability.
-
----
-
-With these components, `hrai_python` offers structured logging, error handling, and utilities for enhancing OpenAI API interactions, suitable for projects requiring robust monitoring and async logging capabilities.
