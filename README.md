@@ -1,64 +1,130 @@
-## Installation
+Here’s an updated README to reflect the code in `hrai_logger.py` and `hrai_utils.py`.
 
+---
 
-    pip install hrai_python
+## hrai_python
 
-## Configuration
+A Python package designed to log and monitor interactions with OpenAI’s API, supporting both local and remote logging. It enables structured logging for OpenAI API calls and facilitates asynchronous remote logging for scalability.
 
+### Installation
 
+Install the package using pip:
 
-    from hrai_python.hrai_logger import hrai_logger
+```bash
+pip install hrai_python
+```
 
-    #Initialize the Logger
+### Configuration
 
-    logger_instance = Logger(
-        client_attr_name='client',        # Attribute name of the OpenAI client in your class
-        enable_remote=True,               # Enable remote logging
-        enable_async=True,                # Use asynchronous remote logging
-        return_type=Logger.Return_Type.content_only
-    )
+Initialize the logger with options for configuring the OpenAI client, logging preferences, and remote logging.
 
+```python
+from hrai_python.hrai_logger import hrai_logger
 
-### Basic Usage
+# Initialize the Logger
+logger_instance = hrai_logger(
+    client_attr_name='client',       # Attribute name of the OpenAI client in your class
+    enable_remote=True,              # Enable remote logging
+    enable_async=True,               # Use asynchronous remote logging
+    return_type=hrai_logger.Return_Type.content_only
+)
+```
 
-    import os
-    from openai import OpenAI
-    from dotenv import load_dotenv
-    from hrai_python.hrai_logger import hrai_logger
+### Basic Usage Example
 
+```python
+import os
+from openai import OpenAI
+from dotenv import load_dotenv
+from hrai_python.hrai_logger import hrai_logger
 
-    logger = logger()
+# Initialize the logger
+logger = hrai_logger()
 
-    class gpt:
-        def __init__(self):
-            load_dotenv()
-            self.model = os.environ.get("OPENAI_MODEL")
-            self.client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
-                
-        @logger.readable
-        def basic_completion(self, messages):
-            completion = self.client.chat.completions.create(
-            model = self.model,
+class GPTClient:
+    def __init__(self):
+        load_dotenv()
+        self.model = os.environ.get("OPENAI_MODEL")
+        self.client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
+
+    @logger.readable
+    def basic_completion(self, messages):
+        completion = self.client.chat.completions.create(
+            model=self.model,
             messages=messages
-            )
-            return(completion)
+        )
+        return completion
+```
 
+### Configuration Options
 
-## Configuration
-hrai_python offers several configuration options when initializing the Logger class:
+`hrai_logger` offers flexible configuration options:
 
-- client_instance (Optional[openai.ChatCompletion]): OpenAI client instance if standalone.
-- client_attr_name (Optional[str]): Attribute name of the OpenAI client in your class (default: "client").
-- base_url (Optional[str]): Remote server URL for logging (default: "https://api.humanreadable.ai/").
-- apikey (Optional[str]): API key for authenticating with the remote logging server.
-- log_file (str): Log file name (default: "hrai.log").
-- log_level (str): Logging level, e.g., "INFO", "DEBUG", "WARNING".
-- log_format (Optional[str]): Log message format (default: '%(asctime)s - %(levelname)s - %(message)s').
-- enable_remote (bool): Enable/disable remote logging (default: True).
-- enable_async (bool): Use asynchronous remote logging (default: False).
-- return_type (Return_Type): Defines the format of the returned response from API calls.
+- **client_instance** (*Optional[openai.ChatCompletion]*): OpenAI client instance if standalone.
+- **client_attr_name** (*Optional[str]*): Attribute name of the OpenAI client in your class (`default: "client"`).
+- **base_url** (*Optional[str]*): Remote server URL for logging (`default: "https://api.humanreadable.ai/"`).
+- **apikey** (*Optional[str]*): API key for authenticating with the remote logging server.
+- **log_file** (*str*): Log file name (`default: "hrai.log"`).
+- **log_level** (*str*): Logging level, e.g., "INFO", "DEBUG", "WARNING".
+- **log_format** (*Optional[str]*): Log message format (`default: "%(asctime)s - %(levelname)s - %(message)s"`).
+- **enable_remote** (*bool*): Enable/disable remote logging (`default: True`).
+- **enable_async** (*bool*): Use asynchronous remote logging (`default: False`).
+- **return_type** (*Return_Type*): Format of the response from API calls (`default: content_only`).
+
 ### Return Types
-The Return_Type enum in hrai_python defines the format of the response from OpenAI API calls:
-- content_only (1): Returns only the message content. (default)
-- json (2): Returns the response as a JSON object.
-- openai_object (3): Returns the full OpenAI response object.
+
+`Return_Type` defines the format of responses from OpenAI API calls:
+- **content_only** (1): Returns only the message content.
+- **json** (2): Returns the response as a JSON object.
+- **openai_object** (3): Returns the full OpenAI response object.
+
+---
+
+## Utilities with hrai_utils
+
+### Tool Creation
+
+`hrai_utils.create_tool` helps build tool structures for OpenAI function calls.
+
+```python
+from hrai_python.hrai_utils import hrai_utils
+
+# Define tool properties
+name = "my_tool"
+description = "This is a tool that does something"
+properties = {
+    "answer": "The answer to the tool",
+    "request": "The request to the tool"
+}
+
+# Create a tool dictionary
+my_tool = hrai_utils.create_tool(name, description, properties)
+```
+
+### Creating Prompts
+
+Format a template string with variable placeholders using `create_prompt`.
+
+```python
+template = "What is the capital of {country}?"
+inputs = {"country": "France"}
+prompt = hrai_utils.create_prompt(template, inputs)
+```
+
+### Calling OpenAI Functions
+
+`openai_function_call` manages interactions with OpenAI API’s function call and processes the response.
+
+```python
+tools = my_tool
+messages = [{"role": "user", "content": "What is the capital of France?"}]
+client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+
+response = hrai_utils().openai_function_call(client, model="gpt-3.5-turbo", tools=tools, messages=messages)
+```
+
+`hrai_utils.openai_chat_completion` provides a direct way to handle OpenAI chat completions with retries for improved reliability.
+
+---
+
+With these components, `hrai_python` offers structured logging, error handling, and utilities for enhancing OpenAI API interactions, suitable for projects requiring robust monitoring and async logging capabilities.
