@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "hrai_python"
-version = "0.3.1"
+version = "0.3.3"
 description = "A decorator for logging OpenAI API requests and responses."
 authors = ["Quoc Duong <qduong@humanreadable.ai>"]
 maintainers = ["Michael Keels <mkeels@humanreadable.ai>"]

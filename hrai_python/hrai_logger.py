@@ -97,6 +97,7 @@ class hrai_logger:
             instance.client._client = new_httpx_client
             try:
                 result = func(instance, *args, **kwargs)
+                logging.info(f"result: {result}")
                 logging.info(f"result type: {type(result)}")
 
             finally:
