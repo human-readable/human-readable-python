@@ -7,7 +7,7 @@ from hrai_python.hrai_utils import hrai_utils
 
 # Configure OpenAI with your API key from environment variables
 openai.api_key = os.getenv("OPENAI_API_KEY")
-logger = hrai_logger(base_url="https://api.humanreadable.ai/", apikey="test_api_key", enable_async=False, enable_remote=True,)
+logger = hrai_logger(base_url="https://humanreadable.ai/", apikey="test_api_key", enable_async=False, enable_remote=True,)
 
 # Tests for gpt_utils functions
 
@@ -121,7 +121,7 @@ def mock_function_call(*args, **kwargs):
 
 def test_readable_decorator_with_function_call(monkeypatch):
     # Instantiate logger with enable_async=False to ensure log_remote is used
-    test_logger = logger(base_url="https://api.humanreadable.ai/", apikey="test_api_key", enable_async=False)
+    test_logger = logger(base_url="https://humanreadable.ai/", apikey="test_api_key", enable_async=False)
 
     # Wrap the mock function with the readable decorator
     decorated_function = test_logger.readable(mock_function_call)
