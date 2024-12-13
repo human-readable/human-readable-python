@@ -60,29 +60,44 @@ class hrai_utils:
         data = json.loads(json_response)
         tools_calls = data.get("tool_calls", [])
         if tools_calls and 'function' in tools_calls[0]:
-                function_data = tools_calls[0].get("function", {})
-                arguments = function_data.get("arguments", "{}")
-                try:
-                    arguments_dict = json.loads(arguments)
-                except json.JSONDecodeError:
-                    if retry_count > 0:
-                        return self.openai_function_call(tools, messages, retry_count - 1)
-                    else:
-                        logging.error("JSON Decode Error: Exceeded maximum retries")
-                        return None
-                required_fields = tools[0]["function"]["parameters"].get("required", [])
-                missing_fields = [field for field in required_fields if arguments_dict.get(field) is None]
-                if missing_fields:
-                    logging.error(f"Missing required fields in arguments: {missing_fields}")
-                    if retry_count > 0:
-                        logging.warning("JSON Decode Error: Retrying function call")
-                        return self.openai_function_call(tools, messages, retry_count - 1)
-                    else:
-                        logging.error("Missing required fields: Exceeded maximum retries")
-                        return None
-                return arguments_dict
+            function_data = tools_calls[0].get("function", {})
+            arguments = function_data.get("arguments", "{}")
+            try:
+                arguments_dict = json.loads(arguments)
+            except json.JSONDecodeError:
+                if retry_count > 0:
+                    return self.openai_function_call(client=client, model=model, tools=tools, messages=messages, retry_count=retry_count - 1)
+                else:
+                    logging.error("JSON Decode Error: Exceeded maximum retries")
+                    return None
+            functions = tools.get("function", {})
+            parameters = functions.get("parameters", {})
+            required_fields = parameters.get("required", [])
+            missing_fields = [field for field in required_fields if arguments_dict.get(field) is None]
+            if missing_fields:
+                logging.error(f"Missing required fields in arguments: {missing_fields}")
+                if retry_count > 0:
+                    logging.warning("JSON Decode Error: Retrying function call")
+                    return self.openai_function_call(client=client, model=model, tools=tools, messages=messages, retry_count=retry_count - 1)
+                else:
+                    logging.error("Missing required fields: Exceeded maximum retries")
+                    return None
+            return chat_response
 
 
     def openai_chat_completion(self, client: OpenAI, model: str, messages: List[dict], retry_count: int = 3) -> str:
         chat_response = client.chat.completions.create(model=model, messages=messages)
-        return str(chat_response.choices[0].message)
+        return chat_response
+    
+    def openai_function_call_praser(self, response: dict) -> dict:
+        tools_calls = response.get("tool_calls", [])
+        if tools_calls and 'function' in tools_calls[0]:
+            function_data = tools_calls[0].get("function", {})
+            arguments = function_data.get("arguments", "{}")
+            try:
+                arguments_dict = json.loads(arguments)
+            except json.JSONDecodeError:
+                logging.error("JSON Decode Error")
+                return None
+            return arguments_dict
+        return None

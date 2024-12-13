@@ -28,7 +28,7 @@ class hrai_logger:
                  enable_async: bool = False, 
                  return_type: Return_Type = Return_Type.content_only):
         self.project_id = project_id
-        self.base_url = base_url or "https://api.humanreadable.ai/"
+        self.base_url = base_url or "https://api.humanreadable.ai"
         self.apikey = apikey or os.getenv("HRAI_API_KEY")
         self.log_file = log_file
         self.log_format = log_format or "%(asctime)s - %(levelname)s - %(message)s"
@@ -97,6 +97,7 @@ class hrai_logger:
             instance.client._client = new_httpx_client
             try:
                 result = func(instance, *args, **kwargs)
+                logging.info(f"result: {result}")
                 logging.info(f"result type: {type(result)}")
 
             finally:

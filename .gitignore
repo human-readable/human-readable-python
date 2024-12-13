@@ -163,5 +163,5 @@ coverage/
 
 # Windows thumbnail cache files
 Thumbs.db
-
+*dist/*
 # End of https://www.toptal.com/developers/gitignore/api/python
